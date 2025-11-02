@@ -29,6 +29,7 @@
 
 import gc
 import io
+import os
 import time
 import json
 import binascii
@@ -44,8 +45,6 @@ from adafruit_matrixportal.matrix import Matrix
 from messageboard import MessageBoard
 from messageboard.fontpool import FontPool
 from messageboard.message import Message
-
-from secrets import secrets
 
 
 # ============================================================================
@@ -307,14 +306,14 @@ class WiFiManager:
         Establish WiFi connection (static or DHCP).
         Returns True on success, False on failure.
         """
-        ssid = secrets["ssid"].strip()
-        password = secrets["password"].strip()
+        ssid = os.getenv("CIRCUITPY_WIFI_SSID", "").strip()
+        password = os.getenv("CIRCUITPY_WIFI_PASSWORD", "").strip()
 
         self.logger.info(f"Connecting to '{ssid}'")
         self.logger.debug(f"MAC: {self._format_mac()}")
 
         # Configure static IP if provided
-        if secrets.get("gateway"):
+        if os.getenv("gateway"):
             self._configure_static_ip()
 
         # Connect
@@ -357,23 +356,24 @@ class WiFiManager:
         """Configure static IP addressing."""
         try:
             wifi.radio.set_ipv4_address(
-                ipv4=ipaddress.IPv4Address(secrets["static_ip"]),
-                netmask=ipaddress.IPv4Address(secrets["netmask"]),
-                gateway=ipaddress.IPv4Address(secrets["gateway"])
+                ipv4=ipaddress.IPv4Address(os.getenv("static_ip")),
+                netmask=ipaddress.IPv4Address(os.getenv("netmask")),
+                gateway=ipaddress.IPv4Address(os.getenv("gateway"))
             )
 
             # Set DNS
-            if "dns" in secrets:
+            dns = os.getenv("dns")
+            if dns:
                 try:
-                    dns_addr = ipaddress.IPv4Address(secrets["dns"])
+                    dns_addr = ipaddress.IPv4Address(dns)
                     wifi.radio.ipv4_dns = dns_addr
                 except (ValueError, AttributeError):
                     try:
-                        wifi.radio.ipv4_dns = secrets["dns"]
+                        wifi.radio.ipv4_dns = dns
                     except (KeyError, AttributeError):
                         pass
 
-            self.logger.debug(f"Static IP: {secrets['static_ip']}")
+            self.logger.debug(f"Static IP: {os.getenv('static_ip')}")
         except Exception as e:
             self.logger.error("Static IP configuration failed", e)
 
@@ -427,8 +427,8 @@ class AdafruitIOClient:
         self.session = None
         self._recreate_session()
 
-        username = secrets["aio_username"]
-        self.headers = {"X-AIO-Key": secrets["aio_key"]}
+        username = os.getenv("aio_username")
+        self.headers = {"X-AIO-Key": os.getenv("aio_key")}
 
         # Build URLs
         base = f"https://io.adafruit.com/api/v2/{username}"
