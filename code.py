@@ -69,6 +69,9 @@ def load_settings():
                     settings[key] = value
     except OSError as e:
         print(f"[ERROR] Failed to load settings.toml: {e}")
+
+    # Debug output
+    print(f"[DEBUG] Loaded settings: aio_username={settings.get('aio_username')}, aio_key={'*' * len(settings.get('aio_key', ''))}")
     return settings
 
 # Load settings once at startup
