@@ -1,6 +1,31 @@
+# SPDX-FileCopyrightText: 2020 Melissa LeBlanc-Williams for Adafruit Industries
+# SPDX-FileCopyrightText: © 2024-2025 William C. Chesher <wchesher@gmail.com>
 # SPDX-License-Identifier: MIT
-# CircuitPython 10.x LED Matrix Scroller - Properly Refactored
-# Clean architecture without typing imports or unsupported features
+#
+# CloudScroll v1.0
+# CircuitPython 10.x
+# ====================================================
+#
+# Wi-Fi-connected LED matrix message board powered by Adafruit IO.
+# Extended from MakerMelissa's MessageBoard with production reliability,
+# dual-queue architecture, and rich animation support.
+#
+# Features:
+#  - Dual-queue message system (plain text + structured JSON)
+#  - Dynamic styling via Adafruit IO (fonts, colors, backgrounds, icons)
+#  - Network resilience with automatic reconnection and watchdog protection
+#  - Rich animations: scrolls, fades, blinks, multi-step effects
+#  - Base64 icon support for dashboard-driven graphics
+#  - 24/7 operation optimized for educational and public display settings
+#  - Clean, maintainable architecture with modular components
+#
+# Prerequisites:
+#  - CircuitPython 10.x on Adafruit MatrixPortal S3
+#  - RGB LED Matrix (64x32, 128x32, or 256x32)
+#  - Libraries: adafruit_matrixportal, adafruit_requests, adafruit_display_text
+#  - Custom messageboard module (included in lib/messageboard/)
+#  - settings.toml with WiFi and Adafruit IO credentials
+#  - Fonts in /fonts/ and images in /images/{WIDTH}/
 
 import gc
 import io
