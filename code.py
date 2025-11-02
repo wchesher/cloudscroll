@@ -48,6 +48,34 @@ from messageboard.message import Message
 
 
 # ============================================================================
+# SETTINGS LOADER
+# ============================================================================
+
+def load_settings():
+    """Load settings from settings.toml file."""
+    settings = {}
+    try:
+        with open("settings.toml", "r") as f:
+            for line in f:
+                line = line.strip()
+                # Skip empty lines and comments
+                if not line or line.startswith("#"):
+                    continue
+                # Parse key = value
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    settings[key] = value
+    except OSError as e:
+        print(f"[ERROR] Failed to load settings.toml: {e}")
+    return settings
+
+# Load settings once at startup
+SETTINGS = load_settings()
+
+
+# ============================================================================
 # CONFIGURATION
 # ============================================================================
 
@@ -313,7 +341,7 @@ class WiFiManager:
         self.logger.debug(f"MAC: {self._format_mac()}")
 
         # Configure static IP if provided
-        if os.getenv("gateway"):
+        if SETTINGS.get("gateway"):
             self._configure_static_ip()
 
         # Connect
@@ -356,13 +384,13 @@ class WiFiManager:
         """Configure static IP addressing."""
         try:
             wifi.radio.set_ipv4_address(
-                ipv4=ipaddress.IPv4Address(os.getenv("static_ip")),
-                netmask=ipaddress.IPv4Address(os.getenv("netmask")),
-                gateway=ipaddress.IPv4Address(os.getenv("gateway"))
+                ipv4=ipaddress.IPv4Address(SETTINGS.get("static_ip")),
+                netmask=ipaddress.IPv4Address(SETTINGS.get("netmask")),
+                gateway=ipaddress.IPv4Address(SETTINGS.get("gateway"))
             )
 
             # Set DNS
-            dns = os.getenv("dns")
+            dns = SETTINGS.get("dns")
             if dns:
                 try:
                     dns_addr = ipaddress.IPv4Address(dns)
@@ -373,7 +401,7 @@ class WiFiManager:
                     except (KeyError, AttributeError):
                         pass
 
-            self.logger.debug(f"Static IP: {os.getenv('static_ip')}")
+            self.logger.debug(f"Static IP: {SETTINGS.get('static_ip')}")
         except Exception as e:
             self.logger.error("Static IP configuration failed", e)
 
@@ -427,8 +455,8 @@ class AdafruitIOClient:
         self.session = None
         self._recreate_session()
 
-        username = os.getenv("aio_username")
-        self.headers = {"X-AIO-Key": os.getenv("aio_key")}
+        username = SETTINGS.get("aio_username")
+        self.headers = {"X-AIO-Key": SETTINGS.get("aio_key")}
 
         # Build URLs
         base = f"https://io.adafruit.com/api/v2/{username}"
