@@ -88,7 +88,7 @@ class Config:
     # Display
     WIDTH = 128
     HEIGHT = 32
-    BIT_DEPTH = 5
+    BIT_DEPTH = 4
     DEFAULT_COLOR = 0xFFFFFF
     DEFAULT_FONT = "lemon"
     MASK_COLOR = 0xE127F9
