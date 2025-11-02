@@ -64,7 +64,7 @@ def load_settings():
                 # Parse key = value
                 if "=" in line:
                     key, value = line.split("=", 1)
-                    key = key.strip()
+                    key = key.strip().lower()  # Convert to lowercase for consistency
                     value = value.strip().strip('"').strip("'")
                     settings[key] = value
     except OSError as e:
