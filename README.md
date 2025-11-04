@@ -283,7 +283,7 @@ Place images in `/images/{WIDTH}/` where `{WIDTH}` matches your matrix (e.g., `/
 
 ### 3D-Printed Mount
 
-For professional wall mounting, use [smtibor's](https://www.printables.com/@smtibor_96853) ([wall mount](https://www.printables.com/model/44541-adafruit-rgb-matrix-portal-wall-mount)/):
+For professional wall mounting, use [smtibor's](https://www.printables.com/@smtibor_96853) ([matrixportal wall mount from printables.com](https://www.printables.com/model/44541-adafruit-rgb-matrix-portal-wall-mount/):
 
 - Print with PLA at 0.2mm layer height
 - Secure to wall with screws or adhesive
