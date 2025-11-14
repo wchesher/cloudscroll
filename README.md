@@ -1,4 +1,4 @@
-# CloudScroll
+# cloudscroll
 
 **Wi-Fi-connected LED matrix message board powered by Adafruit IO**
 
