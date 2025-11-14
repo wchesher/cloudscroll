@@ -2,7 +2,7 @@
 
 **Wi-Fi-connected LED matrix message board powered by Adafruit IO**
 
-CloudScroll is a CircuitPython-based scrolling message display for RGB LED matrices. Built for educational use, real-time data display, and programmable signage, it extends MakerMelissa's foundational MessageBoard design with long-run reliability, structured message parsing, dynamic integrations, and user-friendly dashboards.
+cloudscroll is a CircuitPython-based scrolling message display for RGB LED matrices. Built for educational use, real-time data display, and programmable signage, it extends MakerMelissa's foundational MessageBoard design with long-run reliability, structured message parsing, dynamic integrations, and user-friendly dashboards.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![CircuitPython](https://img.shields.io/badge/CircuitPython-10.x-blueviolet.svg)
