@@ -12,6 +12,8 @@
 #
 # Features:
 #  - Dual-queue message system (plain text + structured JSON)
+#  - Device-specific queues: Each device processes only its targeted messages
+#  - Shared settings: Fonts, colors, backgrounds shared across all devices
 #  - Dynamic styling via Adafruit IO (fonts, colors, backgrounds, icons)
 #  - Network resilience with automatic reconnection and watchdog protection
 #  - Rich animations: scrolls, fades, blinks, multi-step effects
@@ -26,6 +28,22 @@
 #  - Custom messageboard module (included in lib/messageboard/)
 #  - settings.toml with WiFi and Adafruit IO credentials
 #  - Fonts in /fonts/ and images in /images/{WIDTH}/
+#
+# Device-Specific Messaging:
+#  Each device has a unique ID derived from its MAC address (device_XXXXXXXXXXXX).
+#  Messages can target specific devices or broadcast to all:
+#
+#  Text messages:
+#   - "@device_A1B2C3:Hello" → Only device_A1B2C3 displays this
+#   - "@all:Hello" → All devices display this
+#   - "Hello" → All devices display this (no prefix = broadcast)
+#
+#  Structured JSON messages:
+#   - {"device_id": "device_A1B2C3", "elements": [...]} → Specific device only
+#   - {"device_id": "all", "elements": [...]} → All devices
+#   - {"elements": [...]} → All devices (no device_id = broadcast)
+#
+#  Settings (fonts, colors, backgrounds) are always shared across all devices.
 
 import gc
 import io
@@ -784,6 +802,11 @@ class Application:
     def __init__(self):
         # Core components
         self.logger = Logger(verbose=True)
+
+        # Device identification
+        self.device_id = self._get_device_id()
+        self.logger.info(f"Device ID: {self.device_id}")
+
         self.wifi_manager = WiFiManager(self.logger)
         self.io_client = AdafruitIOClient(self.logger, self.wifi_manager)
         self.icon_manager = IconManager(self.logger)
@@ -822,6 +845,60 @@ class Application:
             except Exception as e:
                 self.logger.error(f"Failed to load font {name}", e)
         return fontpool
+
+    def _get_device_id(self):
+        """
+        Generate unique device ID from MAC address.
+        Returns string like 'device_A1B2C3D4E5F6'.
+        """
+        try:
+            mac = wifi.radio.mac_address
+            mac_str = "".join(f"{b:02X}" for b in mac)
+            return f"device_{mac_str}"
+        except Exception as e:
+            # Fallback to a default ID if MAC is unavailable
+            self.logger.error("Failed to get MAC address for device ID", e)
+            return "device_default"
+
+    def _is_message_for_device(self, message_value):
+        """
+        Check if a message is intended for this device.
+
+        For structured JSON messages: checks for 'device_id' field in payload
+        For text messages: checks for '@device_id:' prefix
+
+        Returns (is_for_device, processed_value) tuple:
+        - is_for_device: True if message should be processed by this device
+        - processed_value: The message value with device prefix removed (if applicable)
+        """
+        # Try to parse as JSON (structured message)
+        try:
+            payload = json.loads(message_value)
+            if isinstance(payload, dict):
+                target_device = payload.get("device_id", "all")
+                # Message is for this device if device_id matches or is "all"
+                if target_device == "all" or target_device == self.device_id:
+                    return True, message_value
+                return False, None
+        except (ValueError, TypeError):
+            # Not JSON, treat as text message
+            pass
+
+        # Check for text message with device prefix: @device_id:message
+        if isinstance(message_value, str) and message_value.startswith("@"):
+            # Find the colon separator
+            colon_idx = message_value.find(":")
+            if colon_idx > 1:
+                target_device = message_value[1:colon_idx]
+                message_text = message_value[colon_idx + 1:]
+
+                # Check if this device matches or if target is "all"
+                if target_device == "all" or target_device == self.device_id:
+                    return True, message_text
+                return False, None
+
+        # No device targeting - message is for all devices
+        return True, message_value
 
     def initialize(self):
         """Initialize WiFi and connectivity. Returns True on success."""
@@ -959,7 +1036,7 @@ class Application:
         self.display.apply_group_settings(settings)
 
     def _fetch_feed_items(self, feed_url, queue, feed_type):
-        """Fetch items from feed, add to queue, and delete from IO."""
+        """Fetch items from feed, add to queue (if for this device), and delete from IO."""
         items = self.io_client.fetch_feed_items(feed_url)
 
         for item in items:
@@ -971,11 +1048,20 @@ class Application:
             if not item_id or not item_value:
                 continue
 
+            # Check if message is for this device
+            is_for_device, processed_value = self._is_message_for_device(item_value)
+
+            if not is_for_device:
+                # Skip this message but still delete it from IO
+                self.logger.debug(f"Skipping message not for this device (ID: {item_id})")
+                self.io_client.delete_item(feed_url, item_id)
+                continue
+
             # Log item (truncate for display)
             try:
-                preview = json.loads(item_value).get("name", "Unnamed")
+                preview = json.loads(processed_value).get("name", "Unnamed")
             except Exception:
-                preview = str(item_value)[:25]
+                preview = str(processed_value)[:25]
 
             created_epoch = item.get("created_epoch", 0)
             timestamp = time.localtime(created_epoch)
@@ -983,8 +1069,8 @@ class Application:
 
             self.logger.info(f"[{time_str}] +{feed_type} {preview}")
 
-            # Add to queue (FIFO order)
-            queue.append(item_value)
+            # Add processed value to queue (FIFO order)
+            queue.append(processed_value)
 
             # Delete from IO
             self.io_client.delete_item(feed_url, item_id)
