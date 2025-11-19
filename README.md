@@ -33,6 +33,8 @@ cloudscroll is a CircuitPython-based scrolling message display for RGB LED matri
 ## Features
 
 - **Dual-Queue Architecture**: Separate queues for plain text and structured JSON messages
+- **Device-Specific Queues**: Target messages to individual devices or broadcast to all
+- **Shared Settings**: Fonts, colors, and backgrounds synchronized across all devices
 - **Dynamic Styling**: Fonts, colors, backgrounds, icons, and animations controlled via Adafruit IO
 - **Network Resilience**: Automatic reconnection, watchdog protection, and graceful error handling
 - **Rich Animations**: Multi-step effects including scrolls, fades, blinks, and custom sequences
@@ -69,6 +71,21 @@ cloudscroll is a CircuitPython-based scrolling message display for RGB LED matri
 ⚠️ **Important**: The MatrixPortal S3 cannot reliably power the matrix via USB alone. An external 5V power supply is required. Large capacitors help manage voltage sag during animation refresh cycles.
 
 📖 See Adafruit's [power guidance](https://learn.adafruit.com/adafruit-matrixportal-s3/usb-power) for details.
+
+### Display Size Limitations
+
+CloudScroll currently supports **width×32** matrices only (64×32, 128×32, or 256×32). **64×64 matrices are not supported** due to:
+
+1. **Hardware Constraint**: The Adafruit MatrixPortal S3 is designed for matrices with 32-pixel height
+2. **Memory Limitations**: The double-buffer system would require 128×128 internal bitmaps for a 64×64 display, exceeding CircuitPython's available memory (~320KB)
+3. **Code Architecture**: Height is fixed at 32 pixels throughout the animation and rendering systems
+
+**Alternative for 64×64 displays**: Consider using:
+- **Adafruit Matrix Portal M4** with modified code (limited memory)
+- **Raspberry Pi with RGB Matrix HAT** for larger displays and more memory
+- **ESP32 with HUB75 library** for custom implementations
+
+For educational projects requiring larger displays, the 128×32 configuration provides an excellent balance of visibility, memory efficiency, and feature support.
 
 ---
 
@@ -169,6 +186,10 @@ IDLE_WAIT = 10           # Delay when idle (seconds)
 
 ## Usage
 
+### Device Identification
+
+Each CloudScroll device has a unique ID derived from its WiFi MAC address (e.g., `device_A1B2C3D4E5F6`). This ID is displayed in the serial console at startup and can be used to target specific devices.
+
 ### Plain Text Messages
 
 Send simple text messages to `scroller.text-queue` via the Adafruit IO dashboard or API:
@@ -178,6 +199,16 @@ Welcome to CloudScroll!
 ```
 
 Text messages use global styling (font, color, background, icon) from the scroller feed group.
+
+**Device-Specific Text Messages:**
+
+Target specific devices using the `@device_id:` prefix:
+
+```
+@device_A1B2C3:Hello Device 3!
+@all:Hello All Devices!
+Welcome Everyone!              ← No prefix = broadcast to all
+```
 
 ### Structured JSON Messages
 
@@ -196,6 +227,34 @@ Send rich, formatted messages to `scroller.message-queue`:
   ]
 }
 ```
+
+**Device-Specific JSON Messages:**
+
+Add a `device_id` field to target specific devices:
+
+```json
+{
+  "device_id": "device_A1B2C3D4E5F6",
+  "name": "classroom_a",
+  "elements": [
+    { "type": "text", "data": "Message for Classroom A only!" }
+  ]
+}
+```
+
+Or broadcast to all devices:
+
+```json
+{
+  "device_id": "all",
+  "name": "announcement",
+  "elements": [
+    { "type": "text", "data": "Message for all classrooms!" }
+  ]
+}
+```
+
+**Note**: Messages without a `device_id` field are broadcast to all devices by default.
 
 ---
 
