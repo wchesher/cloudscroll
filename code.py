@@ -12,38 +12,40 @@
 #
 # Features:
 #  - Dual-queue message system (plain text + structured JSON)
-#  - Device-specific queues: Each device processes only its targeted messages
-#  - Shared settings: Fonts, colors, backgrounds shared across all devices
+#  - Device-specific configuration via settings.toml
 #  - Dynamic styling via Adafruit IO (fonts, colors, backgrounds, icons)
 #  - Network resilience with automatic reconnection and watchdog protection
 #  - Rich animations: scrolls, fades, blinks, multi-step effects
 #  - Base64 icon support for dashboard-driven graphics
 #  - 24/7 operation optimized for educational and public display settings
-#  - Clean, maintainable architecture with modular components
 #
 # Prerequisites:
 #  - CircuitPython 10.x on Adafruit MatrixPortal S3
 #  - RGB LED Matrix (64x32, 128x32, or 256x32)
 #  - Libraries: adafruit_matrixportal, adafruit_requests, adafruit_display_text
 #  - Custom messageboard module (included in lib/messageboard/)
-#  - settings.toml with WiFi and Adafruit IO credentials
 #  - Fonts in /fonts/ and images in /images/{WIDTH}/
 #
-# Device-Specific Messaging:
-#  Each device has a unique ID derived from its MAC address (device_XXXXXXXXXXXX).
-#  Messages can target specific devices or broadcast to all:
+# Configuration (settings.toml):
+#  All device settings are in settings.toml. Key settings:
+#   - CIRCUITPY_WIFI_SSID, CIRCUITPY_WIFI_PASSWORD: WiFi credentials
+#   - AIO_USERNAME, AIO_KEY: Adafruit IO credentials
+#   - DEVICE_NAME: Creates AIO group "cloudscroll-<DEVICE_NAME>"
+#   - WIDTH, HEIGHT: Display dimensions (default 128x32)
+#   - DEFAULT_FONT, DEFAULT_COLOR: Initial display settings
 #
-#  Text messages:
-#   - "@device_A1B2C3:Hello" → Only device_A1B2C3 displays this
-#   - "@all:Hello" → All devices display this
-#   - "Hello" → All devices display this (no prefix = broadcast)
+# Adafruit IO Feed Structure:
+#  Each device uses group "cloudscroll-<DEVICE_NAME>" with these feeds:
+#   - text-queue: Plain text messages
+#   - message-queue: Structured JSON messages with elements
+#   - font, color, background, wallpaper: Display settings
+#   - background-on, system-on: Boolean controls
+#   - icon: Base64-encoded BMP icon
 #
-#  Structured JSON messages:
-#   - {"device_id": "device_A1B2C3", "elements": [...]} → Specific device only
-#   - {"device_id": "all", "elements": [...]} → All devices
-#   - {"elements": [...]} → All devices (no device_id = broadcast)
-#
-#  Settings (fonts, colors, backgrounds) are always shared across all devices.
+# Message Targeting (optional):
+#  Messages can target specific devices by MAC-based ID (device_XXXXXXXXXXXX):
+#   - Text: "@device_A1B2C3:Hello" or "@all:Hello"
+#   - JSON: {"device_id": "device_A1B2C3", "elements": [...]}
 
 import gc
 import io
@@ -100,34 +102,49 @@ SETTINGS = load_settings()
 # CONFIGURATION
 # ============================================================================
 
+def _get_setting(key, default, as_int=False):
+    """Get setting from SETTINGS dict with type conversion."""
+    value = SETTINGS.get(key.lower(), default)
+    if as_int:
+        if isinstance(value, str):
+            # Handle hex strings like "0xFFFFFF"
+            if value.lower().startswith("0x"):
+                return int(value, 16)
+            return int(value)
+        return int(value) if value else default
+    return value
+
+
 class Config:
-    """Centralized configuration constants."""
+    """Centralized configuration - reads user settings from settings.toml."""
 
-    # Display
-    WIDTH = 128
-    HEIGHT = 32
-    BIT_DEPTH = 4
-    DEFAULT_COLOR = 0xFFFFFF
-    DEFAULT_FONT = "lemon"
+    # Internal constants (not user-configurable)
     MASK_COLOR = 0xE127F9
-
-    # Timing
-    POLL_PERIOD = 30  # seconds between IO polls
-    BUSY_WAIT = 2     # seconds after processing a message
-    IDLE_WAIT = 10    # seconds when queues are empty
-
-    # Networking
-    WIFI_TIMEOUT = 30
     WIFI_IP_TIMEOUT = 15
-    HTTP_TIMEOUT = 10
     MAX_RETRIES = 3
     CONN_CHECK_RETRIES = 3
 
-    # Adafruit IO
-    FETCH_LIMIT = 5
-    QUEUE_CAPACITY = 250
+    # Display (from settings.toml)
+    WIDTH = _get_setting("width", 128, as_int=True)
+    HEIGHT = _get_setting("height", 32, as_int=True)
+    BIT_DEPTH = _get_setting("bit_depth", 4, as_int=True)
+    DEFAULT_COLOR = _get_setting("default_color", 0xFFFFFF, as_int=True)
+    DEFAULT_FONT = _get_setting("default_font", "lemon")
 
-    # Fonts
+    # Timing (from settings.toml)
+    POLL_PERIOD = _get_setting("poll_period", 30, as_int=True)
+    BUSY_WAIT = _get_setting("busy_wait", 2, as_int=True)
+    IDLE_WAIT = _get_setting("idle_wait", 10, as_int=True)
+
+    # Networking (from settings.toml)
+    WIFI_TIMEOUT = _get_setting("wifi_timeout", 30, as_int=True)
+    HTTP_TIMEOUT = _get_setting("http_timeout", 10, as_int=True)
+
+    # Adafruit IO (from settings.toml)
+    FETCH_LIMIT = _get_setting("fetch_limit", 5, as_int=True)
+    QUEUE_CAPACITY = _get_setting("queue_capacity", 250, as_int=True)
+
+    # Fonts (internal - tied to available font files)
     FONTS = {
         "bmilk": "fonts/Bettermilk-16.pcf",
         "comic8": "fonts/Comicate-14.pcf",
@@ -137,7 +154,7 @@ class Config:
         "showcard": "fonts/Showcard-12.pcf",
     }
 
-    # Animation definitions: (type, name, kwargs_dict)
+    # Animation definitions: (type, name, kwargs_dict) - internal
     ANIMATIONS = {
         "in_right": ("Scroll", "in_from_right", {}),
         "in_left": ("Scroll", "in_from_left", {}),
@@ -153,7 +170,7 @@ class Config:
         "none": None,
     }
 
-    # Multi-step effects: [(effect_name, delay), ...]
+    # Multi-step effects: [(effect_name, delay), ...] - internal
     MULTI_STEP_FX = {
         "none": [("in_right", 0), ("out_left", 0)],
         "left2right": [("in_right", 0), ("out_left", 0)],
@@ -479,11 +496,14 @@ class AdafruitIOClient:
         username = SETTINGS.get("aio_username")
         self.headers = {"X-AIO-Key": SETTINGS.get("aio_key")}
 
-        # Build URLs
+        # Build group name from device name: cloudscroll-<device_name>
+        device_name = SETTINGS.get("device_name", "default")
+        self.group = f"cloudscroll-{device_name}"
+
         base = f"https://io.adafruit.com/api/v2/{username}"
-        self.group_url = f"{base}/groups/scroller"
-        self.text_feed_url = f"{base}/feeds/scroller.text-queue/data"
-        self.message_feed_url = f"{base}/feeds/scroller.message-queue/data"
+        self.group_url = f"{base}/groups/{self.group}"
+        self.text_feed_url = f"{base}/feeds/{self.group}.text-queue/data"
+        self.message_feed_url = f"{base}/feeds/{self.group}.message-queue/data"
 
     def fetch_group_settings(self):
         """Fetch scroller group settings. Returns dict or None."""
@@ -740,24 +760,24 @@ class DisplayController:
         msg = None
         gc.collect()
 
-    def apply_group_settings(self, settings):
-        """Apply settings from scroller group feeds."""
+    def apply_group_settings(self, settings, group):
+        """Apply settings from group feeds."""
         for key, value in settings.items():
             try:
-                if key == "scroller.font":
+                if key == f"{group}.font":
                     self.current_font = value
 
-                elif key == "scroller.background":
+                elif key == f"{group}.background":
                     self.current_background = Config.image_path(value)
 
-                elif key == "scroller.wallpaper":
+                elif key == f"{group}.wallpaper":
                     self.wallpaper = Config.image_path(value)
                     self.update_background(self.wallpaper)
 
-                elif key == "scroller.color":
+                elif key == f"{group}.color":
                     self.current_color = parse_color(value)
 
-                elif key == "scroller.background-on":
+                elif key == f"{group}.background-on":
                     self.background_enabled = value.lower() == "true"
 
             except Exception as e:
@@ -1016,6 +1036,7 @@ class Application:
         """Extract and apply settings from group data."""
         feeds = group_data.get("feeds", [])
         settings = {}
+        group = self.io_client.group
 
         for feed in feeds:
             feed_watchdog()
@@ -1026,14 +1047,14 @@ class Application:
                 settings[key] = value
 
                 # Handle icon separately
-                if key == "scroller.icon":
+                if key == f"{group}.icon":
                     self.icon_manager.set_from_base64(value)
 
                 # Handle system enable
-                elif key == "scroller.system-on":
+                elif key == f"{group}.system-on":
                     self.system_enabled = value.lower() == "true"
 
-        self.display.apply_group_settings(settings)
+        self.display.apply_group_settings(settings, group)
 
     def _fetch_feed_items(self, feed_url, queue, feed_type):
         """Fetch items from feed, add to queue (if for this device), and delete from IO."""
