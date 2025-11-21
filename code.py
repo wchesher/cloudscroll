@@ -497,7 +497,7 @@ class AdafruitIOClient:
         self.headers = {"X-AIO-Key": SETTINGS.get("aio_key")}
 
         # Build group name from device name: cloudscroll-<device_name>
-        device_name = SETTINGS.get("device_name", "default")
+        device_name = SETTINGS.get("device_name", "default").lower()
         self.group = f"cloudscroll-{device_name}"
 
         base = f"https://io.adafruit.com/api/v2/{username}"
