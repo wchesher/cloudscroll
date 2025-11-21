@@ -10,6 +10,7 @@ AIO_USERNAME = "your_aio_username"
 AIO_KEY = "your_aio_key"
 
 # Device name - creates AIO group "cloudscroll-<DEVICE_NAME>"
+# (automatically lowercased for AIO compatibility)
 # Expected feeds under this group:
 #   text-queue, message-queue, font, color, background, wallpaper,
 #   background-on, icon, system-on
