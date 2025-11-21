@@ -505,6 +505,9 @@ class AdafruitIOClient:
         self.text_feed_url = f"{base}/feeds/{self.group}.text-queue/data"
         self.message_feed_url = f"{base}/feeds/{self.group}.message-queue/data"
 
+        self.logger.info(f"AIO Group: {self.group}")
+        self.logger.debug(f"Group URL: {self.group_url}")
+
     def fetch_group_settings(self):
         """Fetch scroller group settings. Returns dict or None."""
         status, data = self._request("GET", self.group_url)
