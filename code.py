@@ -30,12 +30,12 @@
 #  All device settings are in settings.toml. Key settings:
 #   - CIRCUITPY_WIFI_SSID, CIRCUITPY_WIFI_PASSWORD: WiFi credentials
 #   - AIO_USERNAME, AIO_KEY: Adafruit IO credentials
-#   - DEVICE_NAME: Creates AIO group "cloudscroll-<DEVICE_NAME>"
+#   - DEVICE_NAME: Creates AIO group "cloudscroll-<device_name>" (auto-lowercased)
 #   - WIDTH, HEIGHT: Display dimensions (default 128x32)
 #   - DEFAULT_FONT, DEFAULT_COLOR: Initial display settings
 #
 # Adafruit IO Feed Structure:
-#  Each device uses group "cloudscroll-<DEVICE_NAME>" with these feeds:
+#  Each device uses group "cloudscroll-<device_name>" with these feeds:
 #   - text-queue: Plain text messages
 #   - message-queue: Structured JSON messages with elements
 #   - font, color, background, wallpaper: Display settings
@@ -509,7 +509,7 @@ class AdafruitIOClient:
         self.logger.debug(f"Group URL: {self.group_url}")
 
     def fetch_group_settings(self):
-        """Fetch scroller group settings. Returns dict or None."""
+        """Fetch group settings. Returns dict or None."""
         status, data = self._request("GET", self.group_url)
         if status == 200 and isinstance(data, dict):
             return data
