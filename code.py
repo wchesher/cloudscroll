@@ -494,11 +494,15 @@ class AdafruitIOClient:
         username = SETTINGS.get("aio_username")
         self.headers = {"X-AIO-Key": SETTINGS.get("aio_key")}
 
-        # Build URLs
+        # Build URLs from settings
+        group = SETTINGS.get("aio_group", "scroller")
+        text_feed = SETTINGS.get("aio_text_feed", "text-queue")
+        message_feed = SETTINGS.get("aio_message_feed", "message-queue")
+
         base = f"https://io.adafruit.com/api/v2/{username}"
-        self.group_url = f"{base}/groups/scroller"
-        self.text_feed_url = f"{base}/feeds/scroller.text-queue/data"
-        self.message_feed_url = f"{base}/feeds/scroller.message-queue/data"
+        self.group_url = f"{base}/groups/{group}"
+        self.text_feed_url = f"{base}/feeds/{group}.{text_feed}/data"
+        self.message_feed_url = f"{base}/feeds/{group}.{message_feed}/data"
 
     def fetch_group_settings(self):
         """Fetch scroller group settings. Returns dict or None."""
