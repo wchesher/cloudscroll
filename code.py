@@ -760,23 +760,24 @@ class DisplayController:
         gc.collect()
 
     def apply_group_settings(self, settings):
-        """Apply settings from scroller group feeds."""
+        """Apply settings from group feeds."""
+        group = SETTINGS.get("aio_group", "scroller")
         for key, value in settings.items():
             try:
-                if key == "scroller.font":
+                if key == f"{group}.font":
                     self.current_font = value
 
-                elif key == "scroller.background":
+                elif key == f"{group}.background":
                     self.current_background = Config.image_path(value)
 
-                elif key == "scroller.wallpaper":
+                elif key == f"{group}.wallpaper":
                     self.wallpaper = Config.image_path(value)
                     self.update_background(self.wallpaper)
 
-                elif key == "scroller.color":
+                elif key == f"{group}.color":
                     self.current_color = parse_color(value)
 
-                elif key == "scroller.background-on":
+                elif key == f"{group}.background-on":
                     self.background_enabled = value.lower() == "true"
 
             except Exception as e:
@@ -1035,6 +1036,7 @@ class Application:
         """Extract and apply settings from group data."""
         feeds = group_data.get("feeds", [])
         settings = {}
+        group = SETTINGS.get("aio_group", "scroller")
 
         for feed in feeds:
             feed_watchdog()
@@ -1045,11 +1047,11 @@ class Application:
                 settings[key] = value
 
                 # Handle icon separately
-                if key == "scroller.icon":
+                if key == f"{group}.icon":
                     self.icon_manager.set_from_base64(value)
 
                 # Handle system enable
-                elif key == "scroller.system-on":
+                elif key == f"{group}.system-on":
                     self.system_enabled = value.lower() == "true"
 
         self.display.apply_group_settings(settings)
