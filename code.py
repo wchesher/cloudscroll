@@ -100,34 +100,49 @@ SETTINGS = load_settings()
 # CONFIGURATION
 # ============================================================================
 
+def _get_setting(key, default, as_int=False):
+    """Get setting from SETTINGS dict with type conversion."""
+    value = SETTINGS.get(key.lower(), default)
+    if as_int:
+        if isinstance(value, str):
+            # Handle hex strings like "0xFFFFFF"
+            if value.lower().startswith("0x"):
+                return int(value, 16)
+            return int(value)
+        return int(value) if value else default
+    return value
+
+
 class Config:
-    """Centralized configuration constants."""
+    """Centralized configuration - reads user settings from settings.toml."""
 
-    # Display
-    WIDTH = 128
-    HEIGHT = 32
-    BIT_DEPTH = 4
-    DEFAULT_COLOR = 0xFFFFFF
-    DEFAULT_FONT = "lemon"
+    # Internal constants (not user-configurable)
     MASK_COLOR = 0xE127F9
-
-    # Timing
-    POLL_PERIOD = 30  # seconds between IO polls
-    BUSY_WAIT = 2     # seconds after processing a message
-    IDLE_WAIT = 10    # seconds when queues are empty
-
-    # Networking
-    WIFI_TIMEOUT = 30
     WIFI_IP_TIMEOUT = 15
-    HTTP_TIMEOUT = 10
     MAX_RETRIES = 3
     CONN_CHECK_RETRIES = 3
 
-    # Adafruit IO
-    FETCH_LIMIT = 5
-    QUEUE_CAPACITY = 250
+    # Display (from settings.toml)
+    WIDTH = _get_setting("width", 128, as_int=True)
+    HEIGHT = _get_setting("height", 32, as_int=True)
+    BIT_DEPTH = _get_setting("bit_depth", 4, as_int=True)
+    DEFAULT_COLOR = _get_setting("default_color", 0xFFFFFF, as_int=True)
+    DEFAULT_FONT = _get_setting("default_font", "lemon")
 
-    # Fonts
+    # Timing (from settings.toml)
+    POLL_PERIOD = _get_setting("poll_period", 30, as_int=True)
+    BUSY_WAIT = _get_setting("busy_wait", 2, as_int=True)
+    IDLE_WAIT = _get_setting("idle_wait", 10, as_int=True)
+
+    # Networking (from settings.toml)
+    WIFI_TIMEOUT = _get_setting("wifi_timeout", 30, as_int=True)
+    HTTP_TIMEOUT = _get_setting("http_timeout", 10, as_int=True)
+
+    # Adafruit IO (from settings.toml)
+    FETCH_LIMIT = _get_setting("fetch_limit", 5, as_int=True)
+    QUEUE_CAPACITY = _get_setting("queue_capacity", 250, as_int=True)
+
+    # Fonts (internal - tied to available font files)
     FONTS = {
         "bmilk": "fonts/Bettermilk-16.pcf",
         "comic8": "fonts/Comicate-14.pcf",
@@ -137,7 +152,7 @@ class Config:
         "showcard": "fonts/Showcard-12.pcf",
     }
 
-    # Animation definitions: (type, name, kwargs_dict)
+    # Animation definitions: (type, name, kwargs_dict) - internal
     ANIMATIONS = {
         "in_right": ("Scroll", "in_from_right", {}),
         "in_left": ("Scroll", "in_from_left", {}),
@@ -153,7 +168,7 @@ class Config:
         "none": None,
     }
 
-    # Multi-step effects: [(effect_name, delay), ...]
+    # Multi-step effects: [(effect_name, delay), ...] - internal
     MULTI_STEP_FX = {
         "none": [("in_right", 0), ("out_left", 0)],
         "left2right": [("in_right", 0), ("out_left", 0)],

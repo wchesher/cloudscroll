@@ -1,0 +1,44 @@
+# CloudScroll Configuration
+# =========================
+
+# WiFi credentials (required by CircuitPython)
+CIRCUITPY_WIFI_SSID = "your_wifi_ssid"
+CIRCUITPY_WIFI_PASSWORD = "your_wifi_password"
+
+# Adafruit IO credentials
+AIO_USERNAME = "your_aio_username"
+AIO_KEY = "your_aio_key"
+
+# Optional: Static IP configuration (leave commented for DHCP)
+# STATIC_IP = "192.168.1.100"
+# NETMASK = "255.255.255.0"
+# GATEWAY = "192.168.1.1"
+# DNS = "8.8.8.8"
+
+# =========================
+# Display Settings
+# =========================
+WIDTH = 128
+HEIGHT = 32
+BIT_DEPTH = 4
+DEFAULT_COLOR = "0xFFFFFF"
+DEFAULT_FONT = "lemon"
+
+# =========================
+# Timing Settings (seconds)
+# =========================
+POLL_PERIOD = 30
+BUSY_WAIT = 2
+IDLE_WAIT = 10
+
+# =========================
+# Network Settings
+# =========================
+WIFI_TIMEOUT = 30
+HTTP_TIMEOUT = 10
+
+# =========================
+# Queue Settings
+# =========================
+FETCH_LIMIT = 5
+QUEUE_CAPACITY = 250
