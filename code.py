@@ -494,15 +494,14 @@ class AdafruitIOClient:
         username = SETTINGS.get("aio_username")
         self.headers = {"X-AIO-Key": SETTINGS.get("aio_key")}
 
-        # Build URLs from settings
-        group = SETTINGS.get("aio_group", "scroller")
-        text_feed = SETTINGS.get("aio_text_feed", "text-queue")
-        message_feed = SETTINGS.get("aio_message_feed", "message-queue")
+        # Build group name from device name: cloudscroll-<device_name>
+        device_name = SETTINGS.get("device_name", "default")
+        self.group = f"cloudscroll-{device_name}"
 
         base = f"https://io.adafruit.com/api/v2/{username}"
-        self.group_url = f"{base}/groups/{group}"
-        self.text_feed_url = f"{base}/feeds/{group}.{text_feed}/data"
-        self.message_feed_url = f"{base}/feeds/{group}.{message_feed}/data"
+        self.group_url = f"{base}/groups/{self.group}"
+        self.text_feed_url = f"{base}/feeds/{self.group}.text-queue/data"
+        self.message_feed_url = f"{base}/feeds/{self.group}.message-queue/data"
 
     def fetch_group_settings(self):
         """Fetch scroller group settings. Returns dict or None."""
@@ -759,9 +758,8 @@ class DisplayController:
         msg = None
         gc.collect()
 
-    def apply_group_settings(self, settings):
+    def apply_group_settings(self, settings, group):
         """Apply settings from group feeds."""
-        group = SETTINGS.get("aio_group", "scroller")
         for key, value in settings.items():
             try:
                 if key == f"{group}.font":
@@ -1036,7 +1034,7 @@ class Application:
         """Extract and apply settings from group data."""
         feeds = group_data.get("feeds", [])
         settings = {}
-        group = SETTINGS.get("aio_group", "scroller")
+        group = self.io_client.group
 
         for feed in feeds:
             feed_watchdog()
@@ -1054,7 +1052,7 @@ class Application:
                 elif key == f"{group}.system-on":
                     self.system_enabled = value.lower() == "true"
 
-        self.display.apply_group_settings(settings)
+        self.display.apply_group_settings(settings, group)
 
     def _fetch_feed_items(self, feed_url, queue, feed_type):
         """Fetch items from feed, add to queue (if for this device), and delete from IO."""

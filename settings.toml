@@ -9,10 +9,11 @@ CIRCUITPY_WIFI_PASSWORD = "your_wifi_password"
 AIO_USERNAME = "your_aio_username"
 AIO_KEY = "your_aio_key"
 
-# Adafruit IO feed configuration
-AIO_GROUP = "scroller"
-AIO_TEXT_FEED = "text-queue"
-AIO_MESSAGE_FEED = "message-queue"
+# Device name - creates AIO group "cloudscroll-<DEVICE_NAME>"
+# Expected feeds under this group:
+#   text-queue, message-queue, font, color, background, wallpaper,
+#   background-on, icon, system-on
+DEVICE_NAME = "mydevice"
 
 # Optional: Static IP configuration (leave commented for DHCP)
 # STATIC_IP = "192.168.1.100"
