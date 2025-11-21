@@ -12,38 +12,40 @@
 #
 # Features:
 #  - Dual-queue message system (plain text + structured JSON)
-#  - Device-specific queues: Each device processes only its targeted messages
-#  - Shared settings: Fonts, colors, backgrounds shared across all devices
+#  - Device-specific configuration via settings.toml
 #  - Dynamic styling via Adafruit IO (fonts, colors, backgrounds, icons)
 #  - Network resilience with automatic reconnection and watchdog protection
 #  - Rich animations: scrolls, fades, blinks, multi-step effects
 #  - Base64 icon support for dashboard-driven graphics
 #  - 24/7 operation optimized for educational and public display settings
-#  - Clean, maintainable architecture with modular components
 #
 # Prerequisites:
 #  - CircuitPython 10.x on Adafruit MatrixPortal S3
 #  - RGB LED Matrix (64x32, 128x32, or 256x32)
 #  - Libraries: adafruit_matrixportal, adafruit_requests, adafruit_display_text
 #  - Custom messageboard module (included in lib/messageboard/)
-#  - settings.toml with WiFi and Adafruit IO credentials
 #  - Fonts in /fonts/ and images in /images/{WIDTH}/
 #
-# Device-Specific Messaging:
-#  Each device has a unique ID derived from its MAC address (device_XXXXXXXXXXXX).
-#  Messages can target specific devices or broadcast to all:
+# Configuration (settings.toml):
+#  All device settings are in settings.toml. Key settings:
+#   - CIRCUITPY_WIFI_SSID, CIRCUITPY_WIFI_PASSWORD: WiFi credentials
+#   - AIO_USERNAME, AIO_KEY: Adafruit IO credentials
+#   - DEVICE_NAME: Creates AIO group "cloudscroll-<DEVICE_NAME>"
+#   - WIDTH, HEIGHT: Display dimensions (default 128x32)
+#   - DEFAULT_FONT, DEFAULT_COLOR: Initial display settings
 #
-#  Text messages:
-#   - "@device_A1B2C3:Hello" → Only device_A1B2C3 displays this
-#   - "@all:Hello" → All devices display this
-#   - "Hello" → All devices display this (no prefix = broadcast)
+# Adafruit IO Feed Structure:
+#  Each device uses group "cloudscroll-<DEVICE_NAME>" with these feeds:
+#   - text-queue: Plain text messages
+#   - message-queue: Structured JSON messages with elements
+#   - font, color, background, wallpaper: Display settings
+#   - background-on, system-on: Boolean controls
+#   - icon: Base64-encoded BMP icon
 #
-#  Structured JSON messages:
-#   - {"device_id": "device_A1B2C3", "elements": [...]} → Specific device only
-#   - {"device_id": "all", "elements": [...]} → All devices
-#   - {"elements": [...]} → All devices (no device_id = broadcast)
-#
-#  Settings (fonts, colors, backgrounds) are always shared across all devices.
+# Message Targeting (optional):
+#  Messages can target specific devices by MAC-based ID (device_XXXXXXXXXXXX):
+#   - Text: "@device_A1B2C3:Hello" or "@all:Hello"
+#   - JSON: {"device_id": "device_A1B2C3", "elements": [...]}
 
 import gc
 import io
